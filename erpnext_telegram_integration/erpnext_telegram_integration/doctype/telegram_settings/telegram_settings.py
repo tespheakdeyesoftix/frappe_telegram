@@ -35,7 +35,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 
 	if reference_doctype and reference_name:
 		doc_url = get_url_to_form(reference_doctype, reference_name)
-		telegram_doc_link = _("See the document at {0}").format(doc_url)
+		telegram_doc_link =""# _("See the document at {0}").format(doc_url)
 		if message:
 			soup = BeautifulSoup(message)
 			message = soup.get_text('\n') + space + str(telegram_doc_link)
