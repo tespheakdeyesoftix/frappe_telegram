@@ -17,10 +17,13 @@ class TelegramSettings(Document):
 	pass
 
 
-
 @frappe.whitelist()
 def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
+    frappe.enqueue(send_to_telegram_queue(telegram_user, message, reference_doctype, reference_name, attachment),queue="short",timeout=4000)
 
+
+@frappe.whitelist()
+def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
 	telegram_settings = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_settings')
