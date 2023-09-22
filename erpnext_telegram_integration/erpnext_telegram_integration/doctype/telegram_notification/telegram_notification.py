@@ -290,12 +290,12 @@ def get_context(context):
         if not is_html(self.message):
             self.message = frappe.utils.md_to_html(self.message)
 
-@frappe.whitelist()
-def run_telegram_notifications(doc, method):
-    frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.run_telegram_notifications_quese", queue='long',doc=doc,method=method)
+# @frappe.whitelist()
+# def run_telegram_notifications(_doc, _method):
+#     frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.run_telegram_notifications_quese", queue='short',doc=_doc,method=_method)
 
 @frappe.whitelist()
-def run_telegram_notifications_quese(doc, method):
+def run_telegram_notifications(doc, method):
     """Run notifications for this method"""
     if frappe.flags.in_import or frappe.flags.in_patch or frappe.flags.in_install:
         return
