@@ -16,16 +16,8 @@ from bs4 import BeautifulSoup
 class TelegramSettings(Document):
 	pass
 
-
 @frappe.whitelist()
 def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
-	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue", queue='short', telegram_user=telegram_user, message=message,reference_doctype=reference_doctype,reference_name=reference_name,attachment=attachment)
- 
-
-
-
-@frappe.whitelist()
-def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
 	telegram_settings = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_settings')
