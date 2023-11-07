@@ -82,7 +82,9 @@ def get_context(context):
         temp_doc = frappe.new_doc(self.document_type)
         if self.condition:
             try:
-                frappe.safe_eval(self.condition, None, get_context(temp_doc))
+                pass
+                # frappe.safe_eval(self.condition, None, get_context(temp_doc))
+
             except Exception:
                 frappe.throw(_("The Condition '{0}' is invalid").format(self.condition))
 
@@ -146,6 +148,8 @@ def get_context(context):
 
         if self.channel == "Telegram":
             self.send_a_telegram_msg(doc, context)
+
+
 
         if self.set_property_after_alert:
             allow_update = True
