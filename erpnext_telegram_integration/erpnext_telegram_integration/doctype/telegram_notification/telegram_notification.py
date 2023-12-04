@@ -135,6 +135,9 @@ def get_context(context):
 
         return docs
 
+    # def send(self,doc):
+    #     frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.sendQueue", queue='short', self=self,doc=doc)
+
     def send(self, doc):
         """Build recipients and send Notification"""
 
@@ -295,8 +298,8 @@ def get_context(context):
             self.message = frappe.utils.md_to_html(self.message)
 
 # @frappe.whitelist()
-# def run_telegram_notifications(_doc, _method):
-#     frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.run_telegram_notifications_quese", queue='short',doc=_doc,method=_method)
+# def run_telegram_notifications(doc, method):
+#     frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.run_telegram_notifications_queue", queue='short',doc=doc,method=method)
 
 @frappe.whitelist()
 def run_telegram_notifications(doc, method):
@@ -376,8 +379,12 @@ def trigger_notifications(doc, method=None):
                 evaluate_alert(doc, alert, alert.event)
                 frappe.db.commit()
 
-
+@frappe.whitelist()
 def evaluate_alert(doc, alert, event):
+    
+    frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.evaluate_alert_queue", queue='short', doc=doc, _event=event, alert=alert)
+
+def evaluate_alert_queue(doc, alert, _event):
     from jinja2 import TemplateError
 
     try:
@@ -390,7 +397,7 @@ def evaluate_alert(doc, alert, event):
             if not frappe.safe_eval(alert.condition, None, context):
                 return
 
-        if event == "Value Change" and not doc.is_new():
+        if _event == "Value Change" and not doc.is_new():
             try:
                 db_value = frappe.db.get_value(
                     doc.doctype, doc.name, alert.value_changed
@@ -412,7 +419,7 @@ def evaluate_alert(doc, alert, event):
             ):
                 return  # value not changed
 
-        if event != "Value Change" and not doc.is_new():
+        if _event != "Value Change" and not doc.is_new():
             # reload the doc for the latest values & comments,
             # except for validate type event.
             doc = frappe.get_doc(doc.doctype, doc.name)
@@ -469,6 +476,7 @@ def get_doc_fields(doctype_name):
 
 
 def creat_extra_notification_log(doc):
+    pass
     enl_doc = frappe.new_doc("Extra Notification Log")
     enl_doc.subject = _(doc.doctype) + " " + _(doc.name)
     enl_doc.doctype_name = doc.doctype
