@@ -81,8 +81,8 @@ def retry_send_the_fail_telegrame_message():
 		for d in data:
 			bot = telegram.Bot(token=d["token"])
 			asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))
-			# frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
-		# frappe.db.commit()
+			frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
+		frappe.db.commit()
 
 
 
