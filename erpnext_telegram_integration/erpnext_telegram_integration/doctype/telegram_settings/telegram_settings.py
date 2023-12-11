@@ -24,6 +24,7 @@ def send_to_telegram(telegram_user, message, reference_doctype=None, reference_n
 
 @frappe.whitelist()
 def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
+	
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
 	telegram_settings = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_settings')
@@ -45,10 +46,21 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 			if attachment == 1:
 				attachment_url =get_url_for_telegram(reference_doctype, reference_name)
 				message = message + space +  attachment_url
-			asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+			try:
+				asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+			except Exception as e:
+				if str(e)=="Timed out":
+					frappe.get_doc({
+						"doctype":"Telegram Notification Fail Log",
+						"chat_id":telegram_chat_id,
+						"message":message,
+						"token":telegram_token
+					}).insert()
+			
 		
 	else:
 		message = space + str(message) + space
+		
 		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
 
 
@@ -61,5 +73,16 @@ def get_url_for_telegram(doctype, name):
 		name=quoted(name),
 		key=doc.get_signature()
 	)
+
+@frappe.whitelist()
+def retry_send_the_fail_telegrame_message():
+	data = frappe.db.sql("select name,token, chat_id, message from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
+	if data:
+		for d in data:
+			bot = telegram.Bot(token=d["token"])
+			asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))
+			# frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
+		# frappe.db.commit()
+
 
 

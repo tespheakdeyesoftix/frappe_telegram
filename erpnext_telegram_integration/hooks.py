@@ -133,9 +133,15 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
+    "cron": {
+		"*/1 * * * *": [
+			"erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.retry_send_the_fail_telegrame_message",
+		]
+	},
 # 	"all": [
 # 		"erpnext_telegram_integration.tasks.all"
 # 	],
+
 	"daily": [
 		"erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.trigger_daily_alerts",
           "erpnext_telegram_integration.erpnext_telegram_integration.doctype.sms_notification.sms_notification.trigger_daily_alerts",

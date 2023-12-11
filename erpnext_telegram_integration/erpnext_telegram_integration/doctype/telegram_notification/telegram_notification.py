@@ -140,7 +140,7 @@ def get_context(context):
 
     def send(self, doc):
         """Build recipients and send Notification"""
-
+      
         context = get_context(doc)
         context = {"doc": doc, "alert": self, "comments": None}
         if doc.get("_comments"):
@@ -476,7 +476,7 @@ def get_doc_fields(doctype_name):
 
 
 def creat_extra_notification_log(doc):
-    pass
+    return
     enl_doc = frappe.new_doc("Extra Notification Log")
     enl_doc.subject = _(doc.doctype) + " " + _(doc.name)
     enl_doc.doctype_name = doc.doctype
