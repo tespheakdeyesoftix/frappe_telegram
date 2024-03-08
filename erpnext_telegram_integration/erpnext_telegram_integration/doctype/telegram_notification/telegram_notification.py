@@ -209,18 +209,27 @@ def get_context(context):
             recipients_telegram_user_list.append(self.telegram_user)
         recipients_telegram_user_list.extend(self.get_dynamic_recipients(doc))
         space = "\n" * 2
-        message = frappe.render_template(self.subject, context) + space
+        message=""
+        if self.sending_alert_as_image==0:
+            message = frappe.render_template(self.subject, context) + space
         message = message + frappe.render_template(self.message, context)
         attachment = self.get_attachment(doc)
         for telegram_user in recipients_telegram_user_list:
+            
             send_to_telegram(
                 telegram_user=telegram_user,
                 message=message,
                 reference_doctype=doc.doctype,
                 reference_name=doc.name,
                 attachment=attachment,
-            )
+                sending_alert_as_image=self.sending_alert_as_image,
+                estimate_image_height= self.estimate_image_height or 5000,
+                width=self.width or 600,
+                css=self.css,
+                caption= frappe.render_template(self.subject, context)
 
+            )
+           
             doc.message_notification = message
             doc.from_user = frappe.session.user
             doc.party_type = frappe.get_value(
@@ -383,7 +392,8 @@ def trigger_notifications(doc, method=None):
 def evaluate_alert(doc, alert, event):
     
     frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_notification.telegram_notification.evaluate_alert_queue", queue='short', doc=doc, _event=event, alert=alert)
-
+    # evaluate_alert_queue(doc,alert,event)
+    
 def evaluate_alert_queue(doc, alert, _event):
     from jinja2 import TemplateError
 

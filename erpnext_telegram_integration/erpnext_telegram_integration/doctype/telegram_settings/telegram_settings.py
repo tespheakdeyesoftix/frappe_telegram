@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 import os
+from epos_restaurant_2023.api.printing import trim
 import frappe
 import telegram
 import asyncio
@@ -13,18 +14,34 @@ from frappe.utils.data import quoted
 from frappe import _
 from bs4 import BeautifulSoup
 from frappe.utils.print_format import download_pdf
+from PIL import Image, ImageChops
+from html2image import Html2Image
+ 
 
 class TelegramSettings(Document):
 	pass
 
 
 @frappe.whitelist()
-def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
-	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue", queue='short', telegram_user=telegram_user, message=message,reference_doctype=reference_doctype,reference_name=reference_name,attachment=attachment)
+
+def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
+	
+	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue",
+				 queue='short', 
+				 telegram_user=telegram_user,
+				   message=message,
+				   reference_doctype=reference_doctype,
+				   reference_name=reference_name,
+				   attachment=attachment,
+				   sending_alert_as_image=sending_alert_as_image, 
+				   estimate_image_height=estimate_image_height,
+				   width=width,
+				   css=css,
+				   caption=caption)
  
 
 @frappe.whitelist()
-def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None):
+def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
 	
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
@@ -36,27 +53,35 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 	if reference_doctype and reference_name:
 		doc_url = get_url_to_form(reference_doctype, reference_name)
 		telegram_doc_link =""# _("See the document at {0}").format(doc_url)
+
 		if message:
-			soup = BeautifulSoup(message)
-			message = soup.get_text('\n') + space + str(telegram_doc_link)
-			if type(attachment) is str:
-				attachment = int(attachment)
+			if sending_alert_as_image==0:
+				soup = BeautifulSoup(message)
+				message = soup.get_text('\n') + space + str(telegram_doc_link)
+				if type(attachment) is str:
+					attachment = int(attachment)
+				else:
+					if attachment:
+						attachment = 1
+				if attachment == 1:
+					attachment_url =get_url_for_telegram(reference_doctype, reference_name)
+					message = message + space +  attachment_url
+				try:
+					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+				except Exception as e:
+					if str(e)=="Timed out":
+						frappe.get_doc({
+							"doctype":"Telegram Notification Fail Log",
+							"chat_id":telegram_chat_id,
+							"message":message,
+							"token":telegram_token
+						}).insert()
 			else:
-				if attachment:
-					attachment = 1
-			if attachment == 1:
-				attachment_url =get_url_for_telegram(reference_doctype, reference_name)
-				message = message + space +  attachment_url
-			try:
-				asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
-			except Exception as e:
-				if str(e)=="Timed out":
-					frappe.get_doc({
-						"doctype":"Telegram Notification Fail Log",
-						"chat_id":telegram_chat_id,
-						"message":message,
-						"token":telegram_token
-					}).insert()
+				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css)
+				if image_path:
+				 
+					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
+				 
 			
 		
 	else:
@@ -87,3 +112,17 @@ def retry_send_the_fail_telegrame_message():
 
 
 
+def generate_image(height,width,html,css):
+	chrome_path = "/usr/bin/google-chrome"
+	# Set the CHROME_PATH environment variable
+	os.environ['CHROME_PATH'] = chrome_path
+	height = height 
+	hti = Html2Image()
+	hti.chrome_path=chrome_path
+	hti.output_path =frappe.get_site_path() 
+	hti.size=(width, height)
+
+	hti.screenshot(html_str=html, css_str=css, save_as='telegram_alert_image.png')   
+	image_path = '{}/{}'.format(frappe.get_site_path(),'telegram_alert_image.png')    
+	trim(image_path)
+	return image_path
