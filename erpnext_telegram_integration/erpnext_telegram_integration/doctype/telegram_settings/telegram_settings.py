@@ -25,7 +25,6 @@ class TelegramSettings(Document):
 @frappe.whitelist()
 
 def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
-	
 	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue",
 				 queue='short', 
 				 telegram_user=telegram_user,
