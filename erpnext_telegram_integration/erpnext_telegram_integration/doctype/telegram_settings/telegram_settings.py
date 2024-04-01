@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 from frappe.utils.print_format import download_pdf
 from PIL import Image, ImageChops
 from html2image import Html2Image
+import time
  
 
 class TelegramSettings(Document):
@@ -25,6 +26,7 @@ class TelegramSettings(Document):
 @frappe.whitelist()
 
 def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
+	
 	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue",
 				 queue='short', 
 				 telegram_user=telegram_user,
@@ -76,12 +78,16 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 							"token":telegram_token
 						}).insert()
 			else:
-				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css)
+				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
 				if image_path:
 				 
 					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
-				 
-			
+					try:
+						if os.path.isfile(image_path):
+							os.remove(image_path)
+					except OSError as e:
+						pass
+	
 		
 	else:
 		message = space + str(message) + space
@@ -111,7 +117,7 @@ def retry_send_the_fail_telegrame_message():
 
 
 
-def generate_image(height,width,html,css):
+def generate_image(height,width,html,css,caption):
 	chrome_path = "/usr/bin/google-chrome"
 	# Set the CHROME_PATH environment variable
 	os.environ['CHROME_PATH'] = chrome_path
@@ -121,7 +127,14 @@ def generate_image(height,width,html,css):
 	hti.output_path =frappe.get_site_path() 
 	hti.size=(width, height)
 
-	hti.screenshot(html_str=html, css_str=css, save_as='telegram_alert_image.png')   
-	image_path = '{}/{}'.format(frappe.get_site_path(),'telegram_alert_image.png')    
-	trim(image_path)
+	css += """body{
+        background:white;
+    }"""  
+	
+	hash_generate = frappe.generate_hash(length=15)
+	img_name =hash_generate # caption.lower().replace(' ','_').replace('-','_')
+
+	hti.screenshot(html_str=html, css_str=css, save_as='{}.png'.format(img_name))   
+	image_path = '{}/{}'.format(frappe.get_site_path(),'{}.png'.format(img_name))    
+	trim(image_path)	 
 	return image_path
