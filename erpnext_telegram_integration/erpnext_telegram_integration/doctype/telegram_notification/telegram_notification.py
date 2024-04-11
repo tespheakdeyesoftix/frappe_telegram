@@ -7,6 +7,7 @@ import json, os
 from frappe import _
 from frappe.model.document import Document
 
+
 # from frappe.core.doctype.role.role import get_emails_from_role
 from frappe.utils import (
     validate_email_address,
@@ -142,7 +143,15 @@ def get_context(context):
         """Build recipients and send Notification"""
       
         context = get_context(doc)
-        context = {"doc": doc, "alert": self, "comments": None}
+        context["doc"] = doc
+        context["alert"]=self
+        if 'edoor' in frappe.get_installed_apps():
+            if self.document_type=="Working Day":
+                if doc.pos_profile=="eDoor Profile":
+                    from edoor.api.frontdesk import get_day_end_summary_report
+                    context["day_end_summary"] = get_day_end_summary_report(doc.business_branch, doc.posting_date)
+                    
+        
         if doc.get("_comments"):
             context["comments"] = json.loads(doc.get("_comments"))
 
@@ -212,7 +221,9 @@ def get_context(context):
         message=""
         if self.sending_alert_as_image==0:
             message = frappe.render_template(self.subject, context) + space
+            
         message = message + frappe.render_template(self.message, context)
+        
         attachment = self.get_attachment(doc)
         for telegram_user in recipients_telegram_user_list:
             
@@ -452,7 +463,9 @@ def evaluate_alert_queue(doc, alert, _event):
 
 
 def get_context(doc):
-    return {"doc": doc, "nowdate": nowdate, "frappe.utils": frappe.utils}
+   
+    return {"doc": doc, "nowdate": nowdate, "frappe.utils": frappe.utils,"hello":"World"}
+
 
 
 def get_doc_fields(doctype_name):
