@@ -9,8 +9,14 @@
   "chat_id",
   "token",
   "message",
+  "css",
   "note",
-  "status"
+  "status",
+  "document_type",
+  "document_name",
+  "telegram_user",
+  "is_image",
+  "error_message"
  ],
  "fields": [
   {
@@ -42,11 +48,46 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Not Sent\nSent"
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "document_name",
+   "fieldtype": "Data",
+   "label": "Document Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_image",
+   "fieldtype": "Check",
+   "label": "Is Image"
+  },
+  {
+   "fieldname": "css",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "CSS"
+  },
+  {
+   "fieldname": "telegram_user",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Telegram User"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-13 10:32:05.568036",
+ "modified": "2024-07-11 08:39:35.592600",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram Notification Fail Log",

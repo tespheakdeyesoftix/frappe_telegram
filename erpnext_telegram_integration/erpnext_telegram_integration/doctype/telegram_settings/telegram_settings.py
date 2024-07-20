@@ -80,13 +80,26 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 			else:
 				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
 				if image_path:
-				 
-					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
 					try:
+						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
+					
 						if os.path.isfile(image_path):
 							os.remove(image_path)
-					except OSError as e:
-						pass
+					except Exception as e:
+						if str(e)=="Timed out":
+							frappe.get_doc({
+								"doctype":"Telegram Notification Fail Log",
+								"chat_id":telegram_chat_id,
+								"error_message":str(frappe.as_json(e)),
+								"message":message,
+								"telegram_user":telegram_user,
+								"css":css,
+								"is_image":1,
+								"noted":caption,
+								"document_name":reference_name,
+								"document_type":reference_doctype,
+								"token":telegram_token
+							}).insert()
 	
 		
 	else:
@@ -110,8 +123,22 @@ def retry_send_the_fail_telegrame_message():
 	data = frappe.db.sql("select name,token, chat_id, message from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
 	if data:
 		for d in data:
+
 			bot = telegram.Bot(token=d["token"])
-			asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))
+			if d["is_image"] == 1:
+				image_path = generate_image(height=50000,width=600,html=d['message'], css= d["css"],caption=d["note"])
+				if image_path:
+					try:
+						asyncio.run(bot.send_photo(chat_id=d["chat_id"], photo=open(image_path, 'rb'),caption=d["note"] or "Test Noted"))
+						if os.path.isfile(image_path):
+							os.remove(image_path)
+					except Exception as e:
+						frappe.log_error(str(e))
+			else:
+				asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))
+
+			
+
 			frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
 		frappe.db.commit()
 
