@@ -136,7 +136,10 @@ scheduler_events = {
     "cron": {
 		"*/1 * * * *": [
 			"erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.retry_send_the_fail_telegrame_message",
-		]
+		],
+        "0 2 */1 * *":[
+            "erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.delete_telegram_folder",
+        ]
 	},
 # 	"all": [
 # 		"erpnext_telegram_integration.tasks.all"

@@ -4,6 +4,7 @@
 
 from __future__ import unicode_literals
 import os
+import stat
 from epos_restaurant_2023.api.printing import trim
 import frappe
 import telegram
@@ -17,6 +18,7 @@ from frappe.utils.print_format import download_pdf
 from PIL import Image, ImageChops
 from html2image import Html2Image
 import time
+from datetime import datetime
  
 
 class TelegramSettings(Document):
@@ -129,15 +131,13 @@ def retry_send_the_fail_telegrame_message():
 				image_path = generate_image(height=50000,width=600,html=d['message'], css= d["css"],caption=d["note"])
 				if image_path:
 					try:
-						asyncio.run(bot.send_photo(chat_id=d["chat_id"], photo=open(image_path, 'rb'),caption=d["note"] or "Test Noted"))
+						asyncio.run(bot.send_photo(chat_id=d["chat_id"], photo=open(image_path, 'rb'),caption=d["note"] or "NONE-NOTE"))
 						if os.path.isfile(image_path):
 							os.remove(image_path)
 					except Exception as e:
 						frappe.log_error(str(e))
 			else:
-				asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))
-
-			
+				asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))			
 
 			frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
 		frappe.db.commit()
@@ -161,7 +161,34 @@ def generate_image(height,width,html,css,caption):
 	hash_generate = frappe.generate_hash(length=15)
 	img_name =hash_generate # caption.lower().replace(' ','_').replace('-','_')
 
-	hti.screenshot(html_str=html, css_str=css, save_as='{}.png'.format(img_name))   
-	image_path = '{}/{}'.format(frappe.get_site_path(),'{}.png'.format(img_name))    
+	hti.screenshot(html_str=html, css_str=css, save_as='{}.png'.format(img_name))  
+	now = datetime.now() 
+	day_folder = now.strftime('%Y%m%d')
+	directory = "{}/file/telegram/{}".format(frappe.get_site_path(),day_folder)
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+		# Set full permissions (read, write, execute for everyone)
+		os.chmod(directory, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+	image_path = '{}/{}'.format(directory,'{}.png'.format(img_name))    
 	trim(image_path)	 
 	return image_path
+
+def delete_telegram_folder():
+	now = datetime.now() 
+	current_day = now.strftime('%Y%m%d')
+	directory = "{}/file/telegram".format(frappe.get_site_path())
+	if os.path.exists(directory):
+		all_entries = os.listdir(directory)
+		folders = [entry for entry in all_entries if os.path.isdir(os.path.join(directory, entry) )] 
+		for f in folders:
+			if f != current_day:
+				try:
+					path = "{}/{}".format(directory, f)
+					if os.path.exists(path):
+						import shutil
+						shutil.rmtree(path)
+				except Exception as e:
+					pass
+		return "Folder Deleted"
+	return "No folder"
