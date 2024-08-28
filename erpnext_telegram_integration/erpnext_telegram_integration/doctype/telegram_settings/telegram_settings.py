@@ -124,7 +124,7 @@ def get_url_for_telegram(doctype, name):
 
 @frappe.whitelist()
 def retry_send_the_fail_telegrame_message():
-	data = frappe.db.sql("select name,token, chat_id, message from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
+	data = frappe.db.sql("select name,token, chat_id, message,is_image from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
 	if data:
 		for d in data:
 
