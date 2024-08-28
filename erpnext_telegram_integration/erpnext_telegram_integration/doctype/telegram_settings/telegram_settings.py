@@ -28,7 +28,7 @@ class TelegramSettings(Document):
 @frappe.whitelist()
 
 def send_to_telegram(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
-	
+
 	frappe.enqueue("erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings.send_to_telegram_queue",
 				 queue='short', 
 				 telegram_user=telegram_user,
@@ -70,6 +70,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 					attachment_url =get_url_for_telegram(reference_doctype, reference_name)
 					message = message + space +  attachment_url
 				try:
+					# bot.send_message(chat_id=telegram_chat_id, text=message)
 					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
 				except Exception as e:
 					if str(e)=="Timed out":
@@ -84,9 +85,10 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 				if image_path:
 					try:
 						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
-					
+						# bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption)					
 						if os.path.isfile(image_path):
 							os.remove(image_path)
+
 					except Exception as e:
 						if str(e)=="Timed out":
 							frappe.get_doc({
@@ -105,8 +107,8 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 	
 		
 	else:
-		message = space + str(message) + space
-		
+		message = space + str(message) + space		
+		# bot.send_message(chat_id=telegram_chat_id, text=message)
 		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
 
 
@@ -137,6 +139,7 @@ def retry_send_the_fail_telegrame_message():
 					except Exception as e:
 						frappe.log_error(str(e))
 			else:
+				# bot.send_message(chat_id=d["chat_id"], text=d["message"])
 				asyncio.run(bot.send_message(chat_id=d["chat_id"], text=d["message"]))			
 
 			frappe.db.sql("update `tabTelegram Notification Fail Log` set status='Sent' where name='{}'".format(d["name"]))
@@ -151,7 +154,6 @@ def generate_image(height,width,html,css,caption):
 	height = height 
 	hti = Html2Image()
 	hti.chrome_path=chrome_path
-	hti.output_path =frappe.get_site_path() 
 	hti.size=(width, height)
 
 	css += """body{
@@ -161,7 +163,6 @@ def generate_image(height,width,html,css,caption):
 	hash_generate = frappe.generate_hash(length=15)
 	img_name =hash_generate # caption.lower().replace(' ','_').replace('-','_')
 
-	hti.screenshot(html_str=html, css_str=css, save_as='{}.png'.format(img_name))  
 	now = datetime.now() 
 	day_folder = now.strftime('%Y%m%d')
 	directory = "{}/file/telegram/{}".format(frappe.get_site_path(),day_folder)
@@ -170,7 +171,10 @@ def generate_image(height,width,html,css,caption):
 		# Set full permissions (read, write, execute for everyone)
 		os.chmod(directory, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
-	image_path = '{}/{}'.format(directory,'{}.png'.format(img_name))    
+	hti.output_path = directory
+	hti.screenshot(html_str=html, css_str=css, save_as='{}.png'.format(img_name))  
+
+	image_path = '{}/{}'.format(directory,'{}.png'.format(img_name))  
 	trim(image_path)	 
 	return image_path
 
