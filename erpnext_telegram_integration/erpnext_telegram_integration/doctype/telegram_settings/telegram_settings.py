@@ -124,10 +124,9 @@ def get_url_for_telegram(doctype, name):
 
 @frappe.whitelist()
 def retry_send_the_fail_telegrame_message():
-	data = frappe.db.sql("select name,token, chat_id, message,is_image from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
+	data = frappe.db.sql("select name,token, chat_id, message,is_image,css from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
 	if data:
 		for d in data:
-
 			bot = telegram.Bot(token=d["token"])
 			if d["is_image"] == 1:
 				image_path = generate_image(height=50000,width=600,html=d['message'], css= d["css"],caption=d["note"])
