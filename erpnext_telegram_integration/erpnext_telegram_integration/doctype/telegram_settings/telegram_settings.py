@@ -124,15 +124,29 @@ def get_url_for_telegram(doctype, name):
 
 @frappe.whitelist()
 def retry_send_the_fail_telegrame_message():
-	data = frappe.db.sql("select name,token, chat_id, message,is_image,css from `tabTelegram Notification Fail Log` where status='Not Sent' order by creation",as_dict=1)
+	data = frappe.db.sql("""
+					  select name,
+					  token, 
+					  chat_id, 
+					  message,
+					  is_image,
+					  css,
+					  coalesce(note,'') note,
+					  coalesce(document_type,'' ) document_type,
+					  coalesce(document_name,'') document_name
+					  from `tabTelegram Notification Fail Log` 
+					  where status='Not Sent' order by creation""",as_dict=1)
 	if data:
 		for d in data:
 			bot = telegram.Bot(token=d["token"])
+			if d["document_type"] == "Sale" and d["document_name"] != "" and d["note"] == "":
+				custom_bill_number = frappe.db.get_value('Sale', d["document_name"], 'custom_bill_number')
+				d["note"] = custom_bill_number if custom_bill_number != "" else d["document_name"]
 			if d["is_image"] == 1:
 				image_path = generate_image(height=50000,width=600,html=d['message'], css= d["css"],caption=d["note"])
 				if image_path:
 					try:
-						asyncio.run(bot.send_photo(chat_id=d["chat_id"], photo=open(image_path, 'rb'),caption=d["note"] or "NONE-NOTE"))
+						asyncio.run(bot.send_photo(chat_id=d["chat_id"], photo=open(image_path, 'rb'),caption=d["note"] or ""))
 						if os.path.isfile(image_path):
 							os.remove(image_path)
 					except Exception as e:
