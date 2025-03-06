@@ -14,11 +14,9 @@ from frappe.utils import get_url_to_form
 from frappe.utils.data import quoted
 from frappe import _
 from bs4 import BeautifulSoup
-from frappe.utils.print_format import download_pdf
-from PIL import Image, ImageChops
 from html2image import Html2Image
-import time
 from datetime import datetime
+from telegram.ext import Application
  
 
 class TelegramSettings(Document):
@@ -45,14 +43,13 @@ def send_to_telegram(telegram_user, message, reference_doctype=None, reference_n
 
 @frappe.whitelist()
 def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
-	
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
 	telegram_settings = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_settings')
 	telegram_token = frappe.db.get_value('Telegram Settings', telegram_settings,'telegram_token')
-	bot = telegram.Bot(token=telegram_token)
-
-
+	timeout = frappe.db.get_value('Telegram User Settings', telegram_user,'time_out')
+	application = Application.builder().token(telegram_token).read_timeout(timeout).connect_timeout(timeout).build()
+	bot = application.bot
 	if reference_doctype and reference_name:
 		doc_url = get_url_to_form(reference_doctype, reference_name)
 		telegram_doc_link =""# _("See the document at {0}").format(doc_url)
