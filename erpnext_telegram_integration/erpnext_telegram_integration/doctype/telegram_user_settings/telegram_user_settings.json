@@ -9,8 +9,10 @@
  "field_order": [
   "party",
   "telegram_user",
+  "column_break_kxkr",
   "telegram_user_name",
   "telegram_settings",
+  "time_out",
   "section_break_4",
   "is_group_chat",
   "generate_telegram_token",
@@ -84,10 +86,20 @@
    "fieldname": "generate_telegram_token",
    "fieldtype": "Button",
    "label": "Generate Telegram Token"
+  },
+  {
+   "default": "15",
+   "fieldname": "time_out",
+   "fieldtype": "Int",
+   "label": "Time Out"
+  },
+  {
+   "fieldname": "column_break_kxkr",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2023-01-16 14:21:40.062556",
+ "modified": "2025-03-06 08:59:25.494050",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram User Settings",
