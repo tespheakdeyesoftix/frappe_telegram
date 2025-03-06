@@ -14,9 +14,11 @@ from frappe.utils import get_url_to_form
 from frappe.utils.data import quoted
 from frappe import _
 from bs4 import BeautifulSoup
+from frappe.utils.print_format import download_pdf
+from PIL import Image, ImageChops
 from html2image import Html2Image
+import time
 from datetime import datetime
-from telegram.utils.request import Request
  
 
 class TelegramSettings(Document):
@@ -43,13 +45,12 @@ def send_to_telegram(telegram_user, message, reference_doctype=None, reference_n
 
 @frappe.whitelist()
 def send_to_telegram_queue(telegram_user, message, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
+	
 	space = "\n" * 2
 	telegram_chat_id = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_chat_id')
 	telegram_settings = frappe.db.get_value('Telegram User Settings', telegram_user,'telegram_settings')
 	telegram_token = frappe.db.get_value('Telegram Settings', telegram_settings,'telegram_token')
-	timeout = frappe.db.get_value('Telegram User Settings', telegram_user,'time_out')
-	request_timeout = Request(connect_timeout=timeout, read_timeout=timeout)
-	bot = telegram.Bot(token=telegram_token,request=request_timeout)
+	bot = telegram.Bot(token=telegram_token)
 
 
 	if reference_doctype and reference_name:
@@ -70,7 +71,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 					message = message + space +  attachment_url
 				try:
 					# bot.send_message(chat_id=telegram_chat_id, text=message)
-					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message,timeout=timeout))
+					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
 				except Exception as e:
 					if str(e)=="Timed out":
 						frappe.get_doc({
@@ -83,7 +84,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
 				if image_path:
 					try:
-						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption,timeout=timeout))
+						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
 						# bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption)					
 						if os.path.isfile(image_path):
 							os.remove(image_path)
@@ -108,7 +109,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 	else:
 		message = space + str(message) + space		
 		# bot.send_message(chat_id=telegram_chat_id, text=message)
-		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message,timeout=timeout))
+		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
 
 
 
