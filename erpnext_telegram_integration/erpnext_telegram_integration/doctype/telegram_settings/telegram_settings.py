@@ -135,7 +135,8 @@ def retry_send_the_fail_telegrame_message():
 					  where status='Not Sent' order by creation""",as_dict=1)
 	if data:
 		for d in data:
-			bot = telegram.Bot(token=d["token"])
+			application = Application.builder().token(d["token"]).read_timeout(30).connect_timeout(30).build()
+			bot = application.bot
 			if d["document_type"] == "Sale" and d["document_name"] != "" and d["note"] == "":
 				custom_bill_number = frappe.db.get_value('Sale', d["document_name"], 'custom_bill_number')
 				d["note"] = custom_bill_number if custom_bill_number != "" else d["document_name"]
