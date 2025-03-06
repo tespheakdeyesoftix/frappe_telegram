@@ -70,7 +70,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 					message = message + space +  attachment_url
 				try:
 					# bot.send_message(chat_id=telegram_chat_id, text=message)
-					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message,timeout=timeout))
 				except Exception as e:
 					if str(e)=="Timed out":
 						frappe.get_doc({
@@ -83,7 +83,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 				image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
 				if image_path:
 					try:
-						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption))
+						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption,timeout=timeout))
 						# bot.send_photo(chat_id=telegram_chat_id, photo=open(image_path, 'rb'),caption=caption)					
 						if os.path.isfile(image_path):
 							os.remove(image_path)
@@ -108,7 +108,7 @@ def send_to_telegram_queue(telegram_user, message, reference_doctype=None, refer
 	else:
 		message = space + str(message) + space		
 		# bot.send_message(chat_id=telegram_chat_id, text=message)
-		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+		asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message,timeout=timeout))
 
 
 
