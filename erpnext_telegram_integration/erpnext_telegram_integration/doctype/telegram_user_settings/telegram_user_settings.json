@@ -88,7 +88,7 @@
    "label": "Generate Telegram Token"
   },
   {
-   "default": "15",
+   "default": "30",
    "fieldname": "time_out",
    "fieldtype": "Int",
    "label": "Time Out"
@@ -99,7 +99,7 @@
   }
  ],
  "links": [],
- "modified": "2025-03-06 08:59:25.494050",
+ "modified": "2025-03-10 08:37:24.886273",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram User Settings",

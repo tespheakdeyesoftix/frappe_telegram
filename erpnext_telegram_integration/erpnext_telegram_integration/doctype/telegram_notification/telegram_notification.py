@@ -24,6 +24,8 @@ from erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_
     send_to_telegram,
 )
 
+ 
+
 
 class TelegramNotification(Document):
     def onload(self):
@@ -236,6 +238,7 @@ def get_context(context):
                 attachment=attachment,
                 sending_alert_as_image=self.sending_alert_as_image,
                 estimate_image_height= self.estimate_image_height or 5000,
+                print_format_template = self.print_format_template,
                 width=self.width or 600,
                 css=self.css,
                 caption= frappe.render_template(self.subject, context)

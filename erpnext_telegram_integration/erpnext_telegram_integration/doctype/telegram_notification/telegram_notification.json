@@ -9,6 +9,7 @@
  "field_order": [
   "enabled",
   "sending_alert_as_image",
+  "print_format_template",
   "estimate_image_height",
   "width",
   "column_break_2",
@@ -267,11 +268,17 @@
    "fieldname": "width",
    "fieldtype": "Int",
    "label": "Width"
+  },
+  {
+   "fieldname": "print_format_template",
+   "fieldtype": "Link",
+   "label": "Print Format Template",
+   "options": "Print Format"
   }
  ],
  "icon": "fa fa-envelope",
  "links": [],
- "modified": "2024-03-07 22:39:19.061553",
+ "modified": "2025-03-20 09:44:22.864523",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram Notification",
