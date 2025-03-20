@@ -125,9 +125,7 @@ def send_to_telegram_queue(telegram_user, message,print_format_template = None, 
 					})
 
 					image_io = base64_to_image(caption, image_base64)
-					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=image_io,caption=caption))
-
-					frappe.throw("Bot Sending")		 
+					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=image_io,caption=caption))	
 
 				else:
 					image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
