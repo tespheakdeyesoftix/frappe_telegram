@@ -78,28 +78,77 @@ def send_to_telegram_queue(telegram_user, message,print_format_template = None, 
 		telegram_doc_link =""# _("See the document at {0}").format(doc_url)
 
 		if message:
-			if sending_alert_as_image==0:				
-				soup = BeautifulSoup(message)
-				message = soup.get_text('\n') + space + str(telegram_doc_link)
-				if type(attachment) is str:
-					attachment = int(attachment)
-				else:
-					if attachment:
-						attachment = 1
-				if attachment == 1:
-					attachment_url =get_url_for_telegram(reference_doctype, reference_name)
-					message = message + space +  attachment_url
-				try:
-					# bot.send_message(chat_id=telegram_chat_id, text=message)
-					asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
-				except Exception as e:
-					if str(e)=="Timed out":
-						frappe.get_doc({
-							"doctype":"Telegram Notification Fail Log",
-							"chat_id":telegram_chat_id,
-							"message":message,
-							"token":telegram_token
-						}).insert()
+			if sending_alert_as_image==0:
+
+				# send pdf
+				if print_format_template:
+					from epos_restaurant_2023.api.printing import get_pdf_from_print_format
+					pos_profile = None
+					outlet = None
+					meta = frappe.get_meta(reference_doctype)
+					if meta.has_field("pos_profile") or  meta.has_field("outlet"):
+						doc = frappe.get_doc(reference_doctype,reference_name)
+						if meta.has_field("pos_profile"):
+							pos_profile = 	doc.pos_profile		
+						if 	 meta.has_field("outlet"):
+							outlet = doc.outlet
+
+					content_pdf = get_pdf_from_print_format(data = {
+						"action" : "send telegram",                
+						"doc": reference_doctype,
+						"name":reference_name,
+						"print_format": print_format_template,
+						"pos_profile":pos_profile,
+						"outlet":outlet,
+						"letterhead":""
+					}) 
+
+					try:
+						asyncio.run(bot.send_document(
+							chat_id=telegram_chat_id,
+							document=content_pdf,
+							filename="file_{}.pdf".format(reference_name),
+							caption="{} 📄".format(caption)
+						)) 
+						
+					except Exception as e:
+						if str(e)=="Timed out":
+								frappe.get_doc({
+									"doctype":"Telegram Notification Fail Log",
+									"chat_id":telegram_chat_id,
+									"error_message":str(frappe.as_json(e)),
+									"message":message,
+									"telegram_user":telegram_user,
+									"css":css,
+									"is_image":1,
+									"noted":caption,
+									"document_name":reference_name,
+									"document_type":reference_doctype,
+									"token":telegram_token
+								}).insert()
+
+				else:				
+					soup = BeautifulSoup(message)
+					message = soup.get_text('\n') + space + str(telegram_doc_link)
+					if type(attachment) is str:
+						attachment = int(attachment)
+					else:
+						if attachment:
+							attachment = 1
+					if attachment == 1:
+						attachment_url =get_url_for_telegram(reference_doctype, reference_name)
+						message = message + space +  attachment_url
+					try:
+						# bot.send_message(chat_id=telegram_chat_id, text=message)
+						asyncio.run(bot.send_message(chat_id=telegram_chat_id, text=message))
+					except Exception as e:
+						if str(e)=="Timed out":
+							frappe.get_doc({
+								"doctype":"Telegram Notification Fail Log",
+								"chat_id":telegram_chat_id,
+								"message":message,
+								"token":telegram_token
+							}).insert()
 			else:
 
 				if print_format_template:
@@ -125,8 +174,25 @@ def send_to_telegram_queue(telegram_user, message,print_format_template = None, 
 					})
 
 					image_io = base64_to_image(caption, image_base64)
-					asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=image_io,caption=caption))	
-					
+					try:
+						asyncio.run(bot.send_photo(chat_id=telegram_chat_id, photo=image_io,caption=caption))	
+						
+					except Exception as e:
+						if str(e)=="Timed out":
+								frappe.get_doc({
+									"doctype":"Telegram Notification Fail Log",
+									"chat_id":telegram_chat_id,
+									"error_message":str(frappe.as_json(e)),
+									"message":message,
+									"telegram_user":telegram_user,
+									"css":css,
+									"is_image":1,
+									"noted":caption,
+									"document_name":reference_name,
+									"document_type":reference_doctype,
+									"token":telegram_token
+								}).insert()
+				
 
 				else:
 					image_path = generate_image(height=estimate_image_height,width=width, html=message, css= css,caption=caption)
