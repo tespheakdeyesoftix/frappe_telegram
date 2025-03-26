@@ -41,31 +41,44 @@ class TelegramUserSettings(Document):
 
 @frappe.whitelist()
 def generate_telegram_token(is_group_chat):
+	
 	if int(is_group_chat) == 1:
 		return "/"+ binascii.hexlify(os.urandom(19)).decode()
 	else:
 		return binascii.hexlify(os.urandom(20)).decode()
 
 @frappe.whitelist()
-def get_chat_id_button(telegram_token, telegram_settings):
+def get_chat_id_button(telegram_token, telegram_settings,is_group_chat):
 	telegram_token_bot = frappe.db.get_value('Telegram Settings', telegram_settings,'telegram_token')
-	chat_id = asyncio.run(get_chat_id(telegram_token_bot, telegram_token))
+	chat_id = asyncio.run(get_chat_id(telegram_token_bot, telegram_token,is_group_chat))
 	if chat_id:
 		return str(chat_id)
 	else:
 		frappe.msgprint(_("No chat id found for this token, please check the token and make sure you are pasting it in the right chat boot or group in Telegram"))
 	
-async def get_chat_id(telegram_token_bot, telegram_token):
+async def get_chat_id(telegram_token_bot, telegram_token,is_group_chat):
 	bot = telegram.Bot(token = telegram_token_bot)
 	async with bot:
-		updates = await bot.get_updates(limit=100)
-	# updates = bot.get_updates(limit=100)
+		updates = await bot.get_updates(limit=100)		
+	# updates = bot.get_updates(limit=100) 
 		for u in updates:
 			# ignore messages without text
-			if not u.message or not u.message.text :
-				continue
-			message = u.message.text
-			chat_id = u.message.chat_id
-			if telegram_token == message:
-				print("chat_id >>>>>> "+ str(chat_id))
-				return chat_id
+	 
+			if int(is_group_chat) == 1:  
+				if not u.message or not u.message.text :
+					continue
+				message = u.message.text
+				chat_id = u.message.chat_id				
+				if telegram_token == message:
+					print("chat_id >>>>>> "+ str(chat_id))
+					return chat_id
+				
+			else:
+				if not u.channel_post or not u.channel_post.text :
+					continue
+				message = u.channel_post.text
+				chat_id = u.channel_post.chat_id
+
+				if telegram_token == message:
+					print("chat_id >>>>>> "+ str(chat_id))
+					return chat_id

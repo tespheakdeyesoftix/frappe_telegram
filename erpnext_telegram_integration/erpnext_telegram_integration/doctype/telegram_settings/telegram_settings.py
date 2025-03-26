@@ -107,7 +107,7 @@ def send_to_telegram_queue(telegram_user, message,print_format_template = None, 
 						asyncio.run(bot.send_document(
 							chat_id=telegram_chat_id,
 							document=content_pdf,
-							filename="file_{}.pdf".format(reference_name),
+							filename="{}({}).pdf".format(print_format_template,reference_name),
 							caption="{} 📄".format(caption)
 						)) 
 						

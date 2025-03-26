@@ -54,7 +54,7 @@ frappe.ui.form.on('Telegram User Settings', {
 		}
 		frappe.call({
 			method: 'erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_user_settings.telegram_user_settings.get_chat_id_button',
-			args: { "telegram_token": frm.doc.telegram_token, "telegram_settings": frm.doc.telegram_settings },
+			args: { "telegram_token": frm.doc.telegram_token, "telegram_settings": frm.doc.telegram_settings, "is_group_chat":frm.doc.is_group_chat  },
 			callback: (r) => {
 				frm.set_value("telegram_chat_id", r.message);
 				refresh_field("telegram_chat_id");
