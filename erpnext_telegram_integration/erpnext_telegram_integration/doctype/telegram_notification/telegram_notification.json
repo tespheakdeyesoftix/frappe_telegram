@@ -16,6 +16,7 @@
   "channel",
   "telegram_user",
   "dynamic_recipients",
+  "allow_whatsapp_message",
   "filters",
   "subject",
   "document_type",
@@ -274,11 +275,17 @@
    "fieldtype": "Link",
    "label": "Print Format Template",
    "options": "Print Format"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_whatsapp_message",
+   "fieldtype": "Check",
+   "label": "Allow WhatsApp Message"
   }
  ],
  "icon": "fa fa-envelope",
  "links": [],
- "modified": "2025-03-20 09:44:22.864523",
+ "modified": "2025-07-04 09:07:27.564543",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram Notification",

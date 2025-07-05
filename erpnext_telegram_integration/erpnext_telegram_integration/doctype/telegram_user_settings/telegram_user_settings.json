@@ -19,7 +19,10 @@
   "telegram_token",
   "column_break_9",
   "get_chat_id",
-  "telegram_chat_id"
+  "telegram_chat_id",
+  "whatsapp_section",
+  "whatsapp_phone_number_id",
+  "whatsapp_to_number"
  ],
  "fields": [
   {
@@ -96,10 +99,25 @@
   {
    "fieldname": "column_break_kxkr",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "whatsapp_section",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp"
+  },
+  {
+   "fieldname": "whatsapp_phone_number_id",
+   "fieldtype": "Data",
+   "label": "Phone Number ID"
+  },
+  {
+   "fieldname": "whatsapp_to_number",
+   "fieldtype": "Data",
+   "label": "To"
   }
  ],
  "links": [],
- "modified": "2025-03-10 08:37:24.886273",
+ "modified": "2025-07-03 17:04:55.117089",
  "modified_by": "Administrator",
  "module": "Erpnext Telegram Integration",
  "name": "Telegram User Settings",

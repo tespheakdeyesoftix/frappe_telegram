@@ -21,7 +21,7 @@ from frappe.utils.jinja import validate_template
 from frappe.modules.utils import export_module_json, get_doc_module
 from six import string_types
 from erpnext_telegram_integration.erpnext_telegram_integration.doctype.telegram_settings.telegram_settings import (
-    send_to_telegram,
+    send_to_telegram,send_to_whatsapp
 )
 
  
@@ -228,8 +228,9 @@ def get_context(context):
         message = message + frappe.render_template(self.message, context)
         
         attachment = self.get_attachment(doc)
-        for telegram_user in recipients_telegram_user_list:
-            
+        for telegram_user in recipients_telegram_user_list:    
+
+            ##  send telegram 
             send_to_telegram(
                 telegram_user=telegram_user,
                 message=message,
@@ -242,8 +243,23 @@ def get_context(context):
                 width=self.width or 600,
                 css=self.css,
                 caption= frappe.render_template(self.subject, context)
-
             )
+
+            ##  send whatsapp
+            if self.allow_whatsapp_message:
+                send_to_whatsapp(
+                    telegram_user=telegram_user,
+                    message=message,
+                    reference_doctype=doc.doctype,
+                    reference_name=doc.name,
+                    attachment=attachment,
+                    sending_alert_as_image=self.sending_alert_as_image,
+                    estimate_image_height= self.estimate_image_height or 5000,
+                    print_format_template = self.print_format_template,
+                    width=self.width or 600,
+                    css=self.css,
+                    caption= frappe.render_template(self.subject, context)
+                )
            
             doc.message_notification = message
             doc.from_user = frappe.session.user
