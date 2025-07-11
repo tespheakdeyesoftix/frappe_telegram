@@ -343,7 +343,7 @@ def send_to_whatsapp(telegram_user, message,print_format_template = None, refere
 				   caption=caption)
 	return "In Queue"
 	
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def send_to_whatsapp_queue(telegram_user, message,print_format_template = None, reference_doctype=None, reference_name=None, attachment=None,sending_alert_as_image=0, estimate_image_height=5000,width=600,css="",caption=""):
 	data = frappe.db.get_value('Telegram User Settings', telegram_user, 
 		['whatsapp_phone_number_id', 'whatsapp_to_number','telegram_settings', 'time_out'], as_dict=True)
@@ -365,6 +365,8 @@ def send_to_whatsapp_queue(telegram_user, message,print_format_template = None, 
 									height=estimate_image_height,
 									width=width,
 									css=css)
+
+	 
 
 		 
 			if validate:
@@ -448,67 +450,176 @@ def whatsapp_upload_document(phone_number_id,whatsapp_token, filename = None, fi
 	except Exception as e: 
 		frappe.throw(str(e)) 
 
-### filetype = image, document,text
+### filetype = image, document,text  (Free Version)
 def whatsapp_send_document(phone_number_id, whatsapp_token, to_numbers, media_id,message_type, filename,message):
-		url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
-		headers = {
-			"Authorization": f"Bearer {whatsapp_token}",
-			"Content-Type": "application/json"
+	url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
+	headers = {
+		"Authorization": f"Bearer {whatsapp_token}",
+		"Content-Type": "application/json"
+	}
+	recipients = to_numbers.split(",")
+	responses =[]
+	message_type_content = {
+		"image": {
+			"id": media_id,
+			"caption":message
+		},
+		"document": {
+			"id": media_id,
+			"filename": filename,
+			"caption":message
+		},
+		"text": {
+			"body": message
 		}
-		recipients = to_numbers.split(",")
-		responses =[]
-		message_type_content = {
-			"image": {
-				"id": media_id,
-				"caption":message
-			},
-			"document": {
-				"id": media_id,
-				"filename": filename,
-				"caption":message
-			},
-			"text": {
-				"body": message
-			}
-		}
+	}
 
 
-		for recipient in recipients:
-			if message_type == "text":
-				long_message = message_type_content[message_type]["body"] 
-				chunks = whatsapp_chunk_text(long_message)
-				total = len(chunks)
-				for i, chunk in enumerate(chunks, start=1):
-					msg = f"====== Page {i}/{total} ========\n{chunk}" if total > 1 else chunk
-					payload = {
-						"messaging_product": "whatsapp",
-						"to": recipient,
-						"type": message_type,
-						message_type:  {
-							"body": msg
-						}
-					}
-					resp = requests.post(url, headers=headers, json=payload)
-					responses.append(resp.json())
-
-			else:
+	for recipient in recipients:
+		if message_type == "text":
+			long_message = message_type_content[message_type]["body"] 
+			chunks = whatsapp_chunk_text(long_message)
+			total = len(chunks)
+			for i, chunk in enumerate(chunks, start=1):
+				msg = f"====== Page {i}/{total} ========\n{chunk}" if total > 1 else chunk
 				payload = {
 					"messaging_product": "whatsapp",
 					"to": recipient,
 					"type": message_type,
-					message_type:  message_type_content[message_type]
+					message_type:  {
+						"body": msg
+					}
 				}
 				resp = requests.post(url, headers=headers, json=payload)
 				responses.append(resp.json())
-		return responses 
+
+		else:
+			payload = {
+				"messaging_product": "whatsapp",
+				"to": recipient,
+				"type": message_type,
+				message_type:  message_type_content[message_type]
+			}
+			resp = requests.post(url, headers=headers, json=payload)
+			responses.append(resp.json())
+	return responses 
 	
 def whatsapp_chunk_text(text, max_len=4096):
 	safe_max_len = max_len - 120
 	return [text[i:i+safe_max_len] for i in range(0, len(text), safe_max_len)]
 
 
+### charge for whatsapp template send
+### we have 3 template for sending message
+### 1. send document (document_header)
+### 2. send image (image_header)
+### 3. send text (no_header)
+def whatsapp_send_template(phone_number_id, whatsapp_token, to_numbers, media_id,message_type, filename,message):
+	url = f"https://graph.facebook.com/v22.0/{phone_number_id}/messages"
+	headers = {
+		"Authorization": f"Bearer {whatsapp_token}",
+		"Content-Type": "application/json"
+	}
+	recipients = to_numbers.split(",")
+	responses =[]
+	message_type_content = {
+		"image": {
+			"id": media_id,
+		},
+		"document": {
+			"id": media_id,
+			"filename": filename,
+		},
+		"text": {
+			"body": message
+		}
+	}
+
+
+	template_name = "document_header"
+	if message_type == "image":
+		template_name = "image_header"	
+	elif message_type == "text":
+		template_name = "no_header"
+
+	for recipient in recipients:
+		if message_type == "text":
+			long_message = message_type_content[message_type]["body"] 
+			chunks = whatsapp_chunk_text(long_message)
+			total = len(chunks)
+			for i, chunk in enumerate(chunks, start=1):
+				msg = f"====== Page {i}/{total} ========\n{chunk}" if total > 1 else chunk
+				payload = {
+					"messaging_product": "whatsapp",
+					"to": recipient,
+					"type": "template",
+					"template":  {
+						"name": template_name,
+    					"language": { "code": "en" },
+						"components": [
+							{
+								"type": "body",
+								"parameters": [
+									{
+									"type": "text",
+									"text": "System Send Message"
+									},
+									{
+										"type": "text",
+										"text": msg
+									}
+								]
+							}
+						]
+					}
+				}
+				resp = requests.post(url, headers=headers, json=payload)
+				responses.append(resp.json())
+
+		else:
+			payload = {
+				"messaging_product": "whatsapp",
+				"to": recipient,
+				"type": "template",
+				"template":  {
+					"name": template_name,
+    				"language": { "code": "en" },
+					"components": [
+						{
+							"type": "header",
+							"parameters": [
+								{
+									"type": message_type,
+									message_type:message_type_content[message_type]									
+								}
+							]
+						},
+						{
+							"type": "body",
+							"parameters": [
+								{
+								"type": "text",
+								"text": "System Send Message"
+								},
+								{
+									"type": "text",
+									"text": message
+								}
+							]
+						}
+					]
+				} 
+			}
+
+			 
+
+			
+			resp = requests.post(url, headers=headers, json=payload)
+			responses.append(resp.json())
+	return responses 
+
 ### filetype = image, document,text
-@frappe.whitelist()
+# @frappe.whitelist(allow_guest=True)
 def whatsapp_send_message(phone_number_id, whatsapp_token, to_numbers,message_type,caption, filename = None, file_path = None,file_data = None):
 	if isinstance(filename, tuple):
 		filename = filename[0]
@@ -525,11 +636,11 @@ def whatsapp_send_message(phone_number_id, whatsapp_token, to_numbers,message_ty
 			media_id = upload_result.get("id")	
 		# Step 2: Send Document
 		if media_id:
-			resp = whatsapp_send_document(phone_number_id, whatsapp_token, to_numbers, media_id,message_type, filename, caption)
+			# resp = whatsapp_send_document(phone_number_id, whatsapp_token, to_numbers, media_id,message_type, filename, caption)
+			resp = whatsapp_send_template(phone_number_id, whatsapp_token, to_numbers, media_id,message_type, filename, caption)
 			return resp
 
 	frappe.throw("Invalid filetype (image, document, text)")
-
 
 ## send message validation
 def send_message_validation(reference_doctype, reference_name,sending_alert_as_image,print_format_template, message,caption,attachment, height,width,css):
@@ -564,7 +675,8 @@ def send_message_validation(reference_doctype, reference_name,sending_alert_as_i
 					return {
 						"type":"document",
 						"content":content_pdf,
-						"caption":caption
+						"caption":caption,
+						"file_path":None
 					}
 				
 				else:
@@ -581,7 +693,7 @@ def send_message_validation(reference_doctype, reference_name,sending_alert_as_i
 					
 					return {
 						"type":"text",
-						"content":"********* {} *********\n{}".format(caption,msg),
+						"content":msg,
 						"caption":"----------- {} ----------\n{}".format(caption,msg)
 					}
 
@@ -612,7 +724,8 @@ def send_message_validation(reference_doctype, reference_name,sending_alert_as_i
 					return {
 						"type":"image",
 						"content":image_io,
-						"caption":caption
+						"caption":caption,
+						"file_path":None
 					}
 				else:
 					image_path = generate_image(height=height,width=width, html=message, css= css,caption=caption)
